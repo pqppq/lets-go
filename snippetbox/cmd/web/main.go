@@ -2,29 +2,28 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 // - handler
 // - router(servermux)
 // - server
 
-type config struct {
-	addr      string
-	staticDir string
-}
+// type config struct {
+// 	addr      string
+// 	staticDir string
+// }
 
-var cfg config
+// var cfg config
 
 func main() {
-	flag.StringVar(&cfg.addr, "addr", ":4000", "HTTP network address")
-	flag.StringVar(&cfg.staticDir, "static-dir", "./ui/static", "Path to static assets")
-	// addr := flag.String("addr", ":4000", "HTTP newtork address")
-	// addr :=  os.Getenv("SNIPPETBOX_ADDR")
+	addr := flag.String("addr", ":4000", "HTTP newtork address")
 	flag.Parse()
-	fmt.Print(cfg.staticDir)
+
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	errorLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime|log.Lshortfile)
 
 	mux := http.NewServeMux()
 
@@ -35,8 +34,15 @@ func main() {
 	mux.HandleFunc("/snippet/view", snippetView)
 	mux.HandleFunc("/snippet/create", snippetCreate)
 
-	log.Printf("Starting server on %s", cfg.addr)
+	srv := &http.Server{
+		Addr:     *addr,
+		ErrorLog: errorLog,
+		Handler:  mux,
+	}
+
+	infoLog.Printf("Starting server on %s", *addr)
 	// start a new web server
-	err := http.ListenAndServe(cfg.addr, mux)
+	err := srv.ListenAndServe()
 	log.Fatal(err)
+	errorLog.Fatal(err)
 }
