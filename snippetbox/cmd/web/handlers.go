@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-playground/form/v4"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pqppq/lets-go/snippetbox/internal/models"
 	"github.com/pqppq/lets-go/snippetbox/internal/validator"
@@ -58,36 +59,44 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 type snippetCreateForm struct {
-	Title       string
-	Content     string
-	Expires     int
-	FieldErrors map[string]string
-	validator.Validator
+	Title               string     `form:"title"`
+	Content             string     `form:"content"`
+	Expires             int        `form:"expires"`
+	validator.Validator `form:"-"` // ignore a filed during decoding
 }
 
 func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
+	var form snippetCreateForm
+
 	err := r.ParseForm()
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
-	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
-	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
-		return
-	}
+	// decode form data into struct by struct tags
+	err = app.formDecoder.Decode(&form, r.PostForm)
 
-	form := snippetCreateForm{
-		Title:   r.PostForm.Get("title"),
-		Content: r.PostForm.Get("content"),
-		Expires: expires,
-	}
-
-	form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
-	form.CheckField(validator.MaxChars(form.Title, 100), "title", "This filed cannot be more than 100 characres")
-	form.CheckField(validator.NotBlank(form.Content), "content", "This field must equal 1, 7, or 365")
-	form.CheckField(validator.PermittedInt(form.Expires, 1, 7, 365), "expires", "This field must equal 1, 7, or 365")
+	form.CheckField(
+		validator.NotBlank(form.Title),
+		"title",
+		"This field cannot be blank",
+	)
+	form.CheckField(
+		validator.MaxChars(form.Title, 100),
+		"title",
+		"This filed cannot be more than 100 characres",
+	)
+	form.CheckField(
+		validator.NotBlank(form.Content),
+		"content",
+		"This field must equal 1, 7, or 365",
+	)
+	form.CheckField(
+		validator.PermittedInt(form.Expires, 1, 7, 365),
+		"expires",
+		"This field must equal 1, 7, or 365",
+	)
 
 	if !form.Valid() {
 		data := app.newTemplateData(r)
@@ -107,4 +116,24 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 
 func (app *application) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./ui/static/file.zip")
+}
+
+func (app *application) decodePostForm(r *http.Request, dst any) error {
+	err := r.ParseForm()
+	if err != nil {
+		return err
+	}
+
+	err = app.formDecoder.Decode(dst, r.PostForm)
+	if err != nil {
+		var invalidDecodeError *form.InvalidDecoderError
+
+		// case if we try to use an invalid target destination
+		if errors.As(err, &invalidDecodeError) {
+			panic(err)
+		}
+
+		return err
+	}
+	return nil
 }
