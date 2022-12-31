@@ -76,6 +76,10 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 
 	// decode form data into struct by struct tags
 	err = app.formDecoder.Decode(&form, r.PostForm)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
 
 	form.CheckField(
 		validator.NotBlank(form.Title),
@@ -110,6 +114,9 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		app.serverError(w, err)
 		return
 	}
+
+	// set context as session "flash"
+	app.sessionManager.Put(r.Context(), "flash", "Snippet successfully created.")
 
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
