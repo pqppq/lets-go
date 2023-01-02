@@ -52,6 +52,9 @@ func newTemplateCache() (map[string]*template.Template, error) {
 }
 
 func humanDate(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
 	// 1: month (January, Jan, 01, etc)
 	// 2: day
 	// 3: hour (15 is 3pm on a 24 hour clock)
@@ -61,5 +64,5 @@ func humanDate(t time.Time) string {
 	// 7: timezone (GMT-7 is MST)
 
 	// DD Mon YYYY as HH:mm
-	return t.Format("02 Jan 2006 at 15:04")
+	return t.UTC().Format("02 Jan 2006 at 15:04")
 }
