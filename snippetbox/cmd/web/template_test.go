@@ -3,6 +3,8 @@ package main
 import (
 	"testing"
 	"time"
+
+	"github.com/pqppq/lets-go/snippetbox/internal/assert"
 )
 
 func Test(t *testing.T) {
@@ -31,7 +33,7 @@ func Test(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			hd := humanDate(tc.tm)
 			if hd != tc.expected {
-				t.Errorf("expected %q, but got %q instead.", tc.expected, hd)
+				assert.Equal(t, hd, tc.expected)
 			}
 		})
 	}
