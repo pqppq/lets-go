@@ -1,3 +1,6 @@
+# Let's Go: Learn to Build Professional Web Applications with Go by Alex Edwards
+
+https://lets-go.alexedwards.net/
 
 start up database
 ```
